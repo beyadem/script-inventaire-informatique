@@ -2,9 +2,8 @@
 # Auteur : beyadem
 # ==========================================
 
-# 1. Configuration du dossier de travail
+# Configuration du dossier de travail
 $Dossier = $PSScriptRoot
-
 Write-Host "Dossier du projet : $Dossier" -ForegroundColor Cyan
 
 # 2. Informations sur le PC
@@ -563,4 +562,4 @@ $HTML | Set-Content -Path "$Dossier\inventaire.html" -Encoding UTF8
 Write-Host "Dashboard HTML genere avec succes !" -ForegroundColor Green
 
 # 11. Confirmation
-Write-Host "Les rapports ont ete generes dans C:\Projet" -ForegroundColor Green
+Write-Host "Les rapports ont ete generes dans $Dossier" -ForegroundColor Green
