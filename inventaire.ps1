@@ -2,11 +2,10 @@
 # Auteur : beyadem
 # ==========================================
 
-# 1. Creation du dossier Projet
-$Dossier = "C:\Projet"
-if (-not (Test-Path $Dossier)) {
-    New-Item -Path $Dossier -ItemType Directory | Out-Null
-}
+# 1. Configuration du dossier de travail
+$Dossier = $PSScriptRoot
+
+Write-Host "Dossier du projet : $Dossier" -ForegroundColor Cyan
 
 # 2. Informations sur le PC
 $NomPC = $env:COMPUTERNAME
@@ -465,9 +464,19 @@ $HTML = @"
 <div class="storage-card">
     <h2>Audit du pare-feu Windows</h2>
 
-    <p>Profil Domaine : $EtatDomain</p>
-    <p>Profil Prive : $EtatPrivate</p>
-    <p>Profil Public : $EtatPublic</p>
+
+<p>Profil Domaine :
+    <strong style="color: $CouleurDomain;">$EtatDomain</strong>
+</p>
+
+<p>Profil Prive :
+    <strong style="color: $CouleurPrivate;">$EtatPrivate</strong>
+</p>
+
+<p>Profil Public :
+    <strong style="color: $CouleurPublic;">$EtatPublic</strong>
+</p>
+
 </div>
 
 <!-- Audit de securite Windows -->
