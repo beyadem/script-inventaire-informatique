@@ -1,6 +1,6 @@
 
 # Projet : Inventaire informatique
-# Auteur : Mon premier projet GitHub
+# Auteur : beyadem
 # Objectif : Recuperer les informations du PC
 # ==========================================
 
