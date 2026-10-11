@@ -1,2 +1,21 @@
-# script-inventaire-informatique
-Script PowerShell pour automatiser l'inventaire matériel et système d'un ordinateur Windows.
+
+# Projet : Inventaire informatique
+# Auteur : Mon premier projet GitHub
+# Objectif : Recuperer les informations du PC
+# ==========================================
+
+# 1. Recuperer le nom de l'ordinateur
+$NomPC = $env:COMPUTERNAME
+
+# 2. Recuperer les informations de Windows
+$Windows = Get-CimInstance Win32_OperatingSystem
+
+# 3. Recuperer les informations du processeur
+$Processeur = Get-CimInstance Win32_Processor
+
+# 4. Afficher les resultats de l'inventaire
+Write-Host "===== INVENTAIRE INFORMATIQUE ====="
+Write-Host "Nom du PC : $NomPC"
+Write-Host "Systeme : $($Windows.Caption)"
+Write-Host "Version Windows : $($Windows.Version)"
+Write-Host "Processeur : $($Processeur.Name)"
