@@ -2,16 +2,22 @@
 # Auteur : beyadem
 # ==========================================
 
-# 1. Informations sur le PC et Windows
+# 1. Creation du dossier Projet
+$Dossier = "C:\Projet"
+if (-not (Test-Path $Dossier)) {
+    New-Item -Path $Dossier -ItemType Directory | Out-Null
+}
+
+# 2. Informations sur le PC
 $NomPC = $env:COMPUTERNAME
 $Windows = Get-CimInstance -ClassName Win32_OperatingSystem
 $Processeur = Get-CimInstance -ClassName Win32_Processor
 
-# 2. Quantite de RAM en Go
+# 3. Memoire RAM en Go
 $Ordinateur = Get-CimInstance -ClassName Win32_ComputerSystem
 $RAM = [math]::Round($Ordinateur.TotalPhysicalMemory / 1GB, 2)
 
-# 3. Informations reseau : adresse IP et adresse MAC
+# 4. Informations reseau
 $ConfigurationReseau = Get-NetIPConfiguration |
     Where-Object {
         $_.IPv4Address -and
@@ -20,10 +26,12 @@ $ConfigurationReseau = Get-NetIPConfiguration |
     Select-Object -First 1
 $AdresseIP = $ConfigurationReseau.IPv4Address.IPAddress
 $Interface = Get-NetAdapter |
-    Where-Object { $_.InterfaceIndex -eq $ConfigurationReseau.InterfaceIndex }
+    Where-Object {
+        $_.InterfaceIndex -eq $ConfigurationReseau.InterfaceIndex
+    }
 $AdresseMAC = $Interface.MacAddress
 
-# 4. Informations sur les disques
+# 5. Informations sur les disques
 $Disques = Get-CimInstance -ClassName Win32_LogicalDisk `
     -Filter "DriveType=3"
 $InformationsDisques = ($Disques | ForEach-Object {
@@ -32,7 +40,7 @@ $InformationsDisques = ($Disques | ForEach-Object {
     "$($_.DeviceID) : $Libre Go libres sur $Taille Go"
 }) -join " | "
 
-# 5. Creation de l'inventaire
+# 6. Creation de l'inventaire
 $Inventaire = [PSCustomObject]@{
     NomPC          = $NomPC
     Systeme        = $Windows.Caption
@@ -44,19 +52,25 @@ $Inventaire = [PSCustomObject]@{
     Disques        = $InformationsDisques
     DateInventaire = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
 }
-
-# 6. Affichage des resultats
+# 7. Affichage dans PowerShell
 $Inventaire | Format-List
 
-# 7. Export dans un fichier CSV
+# 8. Export Excel (CSV)
 $Inventaire | Export-Csv `
-    -Path "C:\Inventaire\inventaire.csv" `
+    -Path "$Dossier\inventaire.csv" `
     -NoTypeInformation `
     -Encoding UTF8
-Write-Host "Inventaire enregistre dans C:\Inventaire\inventaire.csv" -ForegroundColor Green
 
-# 8. Export dans un fichier texte pour le Bloc-notes
+# 9. Export Bloc-notes (TXT)
 $Inventaire | Format-List |
     Out-String |
-    Set-Content -Path "C:\Inventaire\inventaire.txt" -Encoding UTF8
-Write-Host "Rapport texte enregistre dans C:\Inventaire\inventaire.txt" -ForegroundColor Cyan
+    Set-Content -Path "$Dossier\inventaire.txt" -Encoding UTF8
+
+# 10. Generation du tableau de bord HTML
+$HTML = $Inventaire |
+    ConvertTo-Html -Title "Projet informatique" `
+    -PreContent "<h1>Tableau de bord informatique</h1>"
+$HTML | Out-File -FilePath "$Dossier\inventaire.html" -Encoding UTF8
+
+# 11. Confirmation
+Write-Host "Les rapports ont ete generes dans C:\Projet" -ForegroundColor Green
