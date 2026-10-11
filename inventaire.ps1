@@ -67,9 +67,55 @@ $Inventaire | Format-List |
     Set-Content -Path "$Dossier\inventaire.txt" -Encoding UTF8
 
 # 10. Generation du tableau de bord HTML
-$HTML = $Inventaire |
-    ConvertTo-Html -Title "Projet informatique" `
+
+# 10. Generation du tableau de bord HTML
+
+# Definition du style CSS
+$CSS = @"
+<style>
+    body {
+        background-color: #0f172a;
+        color: #f1f5f9;
+        font-family: Arial, sans-serif;
+        margin: 40px;
+    }
+
+    h1 {
+        color: #38bdf8;
+        text-align: center;
+        margin-bottom: 30px;
+    }
+
+    table {
+        width: 100%;
+        border-collapse: collapse;
+        background-color: #1e293b;
+        border-radius: 10px;
+    }
+
+    th {
+        background-color: #334155;
+        color: #38bdf8;
+        padding: 15px;
+        text-align: left;
+    }
+
+    td {
+        padding: 15px;
+        border-bottom: 1px solid #475569;
+    }
+
+    tr:hover {
+        background-color: #334155;
+    }
+</style>
+"@
+# Conversion de l'inventaire en HTML
+$HTML = $Inventaire | ConvertTo-Html `
+    -Title "Projet informatique" `
+    -Head $CSS `
     -PreContent "<h1>Tableau de bord informatique</h1>"
+# Enregistrement du fichier HTML
 $HTML | Out-File -FilePath "$Dossier\inventaire.html" -Encoding UTF8
 
 # 11. Confirmation
