@@ -56,10 +56,25 @@ else {
     $PourcentageDisque = 0
 }
 
-# 6. Creation de l'inventaire
+# Verification du pare-feu Windows
+
+$PareFeu = Get-NetFirewallProfile
+
+$PareFeuDomain = ($PareFeu |
+    Where-Object { $_.Name -eq "Domain" }).Enabled
+
+$PareFeuPrivate = ($PareFeu |
+    Where-Object { $_.Name -eq "Private" }).Enabled
+
+$PareFeuPublic = ($PareFeu |
+    Where-Object { $_.Name -eq "Public" }).Enabled
 
 # 6. Creation de l'inventaire
 $Inventaire = [PSCustomObject]@{
+
+    PareFeuDomain         = $PareFeuDomain
+    PareFeuPrivate        = $PareFeuPrivate
+    PareFeuPublic         = $PareFeuPublic
     NomPC                 = $NomPC
     Systeme               = $Windows.Caption
     VersionWindows        = $Windows.Version
@@ -88,9 +103,6 @@ $Inventaire | Export-Csv `
 $Inventaire | Format-List |
     Out-String |
     Set-Content -Path "$Dossier\inventaire.txt" -Encoding UTF8
-
-
-# 10. Generation du tableau de bord HTML
 
 # 10. Generation du tableau de bord HTML
 
@@ -132,6 +144,21 @@ else {
     $CouleurDisque = "#22c55e"
     $EtatDisque = "Stockage disponible"
 }
+
+# Preparation des indicateurs du pare-feu
+function Get-EtatPareFeu($Actif) {
+    if ($null -eq $Actif) {
+        return "Inconnu"
+    }
+    if ($Actif) {
+        return "Active"
+    }
+    return "Desactive"
+}
+
+$EtatDomain = Get-EtatPareFeu $PareFeuDomain
+$EtatPrivate = Get-EtatPareFeu $PareFeuPrivate
+$EtatPublic = Get-EtatPareFeu $PareFeuPublic
 
 # Creation du contenu HTML
 $HTML = @"
@@ -330,6 +357,15 @@ $HTML = @"
             </div>
 
         </div>
+
+<!-- Audit du pare-feu Windows -->
+<div class="storage-card">
+    <h2>Audit du pare-feu Windows</h2>
+
+    <p>Profil Domaine : $EtatDomain</p>
+    <p>Profil Prive : $EtatPrivate</p>
+    <p>Profil Public : $EtatPublic</p>
+</div>
 
         <!-- Jauge de stockage -->
         <div class="storage-card">
