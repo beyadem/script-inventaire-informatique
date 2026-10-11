@@ -53,6 +53,10 @@ $Inventaire | Export-Csv `
     -Path "C:\Inventaire\inventaire.csv" `
     -NoTypeInformation `
     -Encoding UTF8
-
 Write-Host "Inventaire enregistre dans C:\Inventaire\inventaire.csv" -ForegroundColor Green
 
+# 8. Export dans un fichier texte pour le Bloc-notes
+$Inventaire | Format-List |
+    Out-String |
+    Set-Content -Path "C:\Inventaire\inventaire.txt" -Encoding UTF8
+Write-Host "Rapport texte enregistre dans C:\Inventaire\inventaire.txt" -ForegroundColor Cyan
