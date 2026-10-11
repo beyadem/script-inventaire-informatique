@@ -40,18 +40,41 @@ $InformationsDisques = ($Disques | ForEach-Object {
     "$($_.DeviceID) : $Libre Go libres sur $Taille Go"
 }) -join " | "
 
+# Calcul de l'utilisation du disque C:
+$DisqueC = Get-CimInstance -ClassName Win32_LogicalDisk -Filter "DeviceID='C:'"
+
+if ($DisqueC -and $DisqueC.Size -gt 0) {
+    $TailleDisque = [math]::Round($DisqueC.Size / 1GB, 2)
+    $EspaceLibre = [math]::Round($DisqueC.FreeSpace / 1GB, 2)
+    $EspaceUtilise = [math]::Round(($DisqueC.Size - $DisqueC.FreeSpace) / 1GB, 2)
+    $PourcentageDisque = [math]::Round((($DisqueC.Size - $DisqueC.FreeSpace) / $DisqueC.Size) * 100, 1)
+}
+else {
+    $TailleDisque = 0
+    $EspaceLibre = 0
+    $EspaceUtilise = 0
+    $PourcentageDisque = 0
+}
+
+# 6. Creation de l'inventaire
+
 # 6. Creation de l'inventaire
 $Inventaire = [PSCustomObject]@{
-    NomPC          = $NomPC
-    Systeme        = $Windows.Caption
-    VersionWindows = $Windows.Version
-    Processeur     = $Processeur.Name.Trim()
-    RAM_Go         = $RAM
-    AdresseIP      = $AdresseIP
-    AdresseMAC     = $AdresseMAC
-    Disques        = $InformationsDisques
-    DateInventaire = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+    NomPC                 = $NomPC
+    Systeme               = $Windows.Caption
+    VersionWindows        = $Windows.Version
+    Processeur            = $Processeur.Name.Trim()
+    RAM_Go                = $RAM
+    AdresseIP             = $AdresseIP
+    AdresseMAC            = $AdresseMAC
+    Disques               = $InformationsDisques
+    TailleDisque_Go       = $TailleDisque
+    EspaceLibre_Go        = $EspaceLibre
+    EspaceUtilise_Go      = $EspaceUtilise
+    UtilisationDisque_Pct = $PourcentageDisque
+    DateInventaire        = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
 }
+
 # 7. Affichage dans PowerShell
 $Inventaire | Format-List
 
@@ -68,10 +91,14 @@ $Inventaire | Format-List |
 
 
 # 10. Generation du tableau de bord HTML
-# Fonction pour securiser les textes affiches en HTML
+
+# 10. Generation du tableau de bord HTML
+
+# Fonction pour securiser les valeurs HTML
 function Convertir-HTML($Valeur) {
     return [System.Net.WebUtility]::HtmlEncode([string]$Valeur)
 }
+
 # Recuperation des informations
 $PC_HTML = Convertir-HTML $Inventaire.NomPC
 $Windows_HTML = Convertir-HTML $Inventaire.Systeme
@@ -81,6 +108,30 @@ $IP_HTML = Convertir-HTML $Inventaire.AdresseIP
 $MAC_HTML = Convertir-HTML $Inventaire.AdresseMAC
 $Disques_HTML = Convertir-HTML $Inventaire.Disques
 $Date_HTML = Convertir-HTML $Inventaire.DateInventaire
+
+# Informations de stockage
+$Taille_HTML = $TailleDisque
+$Libre_HTML = $EspaceLibre
+$Utilise_HTML = $EspaceUtilise
+
+# Format du pourcentage compatible avec le CSS
+$Pourcentage_HTML = $PourcentageDisque.ToString(
+    [System.Globalization.CultureInfo]::InvariantCulture
+)
+
+# Couleur selon le pourcentage d'utilisation
+if ($PourcentageDisque -ge 90) {
+    $CouleurDisque = "#ef4444"
+    $EtatDisque = "Espace disque faible"
+}
+elseif ($PourcentageDisque -ge 75) {
+    $CouleurDisque = "#f59e0b"
+    $EtatDisque = "Stockage a surveiller"
+}
+else {
+    $CouleurDisque = "#22c55e"
+    $EtatDisque = "Stockage disponible"
+}
 
 # Creation du contenu HTML
 $HTML = @"
@@ -148,6 +199,54 @@ $HTML = @"
             font-size: 20px;
             font-weight: bold;
             overflow-wrap: anywhere;
+        }
+
+        /* Jauge de stockage */
+
+        .storage-card {
+            margin-top: 30px;
+            background: #1e293b;
+            border: 1px solid #334155;
+            border-radius: 14px;
+            padding: 24px;
+        }
+
+        .storage-card h2 {
+            color: #38bdf8;
+        }
+
+        .storage-status {
+            color: #cbd5e1;
+            font-size: 14px;
+        }
+
+        .progress-track {
+            width: 100%;
+            height: 18px;
+            background: #334155;
+            border-radius: 20px;
+            overflow: hidden;
+            margin-top: 20px;
+        }
+
+        .progress-fill {
+            height: 100%;
+            border-radius: 20px;
+        }
+
+        .storage-values {
+            display: flex;
+            justify-content: space-between;
+            flex-wrap: wrap;
+            gap: 10px;
+            color: #94a3b8;
+            font-size: 14px;
+        }
+
+        .storage-total {
+            color: #94a3b8;
+            font-size: 13px;
+            margin-top: 20px;
         }
 
         .details {
@@ -232,6 +331,30 @@ $HTML = @"
 
         </div>
 
+        <!-- Jauge de stockage -->
+        <div class="storage-card">
+            <h2>Stockage du disque C:</h2>
+
+            <p class="storage-status">$EtatDisque</p>
+
+            <div class="progress-track">
+                <div class="progress-fill"
+                     style="width: $Pourcentage_HTML%; background-color: $CouleurDisque;">
+                </div>
+            </div>
+
+            <p>$Pourcentage_HTML% utilise</p>
+
+            <div class="storage-values">
+                <span>$Utilise_HTML Go utilises</span>
+                <span>$Libre_HTML Go libres</span>
+            </div>
+
+            <p class="storage-total">
+                Capacite totale : $Taille_HTML Go
+            </p>
+        </div>
+
         <div class="details">
             <h2>Informations complementaires</h2>
             <p><strong>Stockage :</strong> $Disques_HTML</p>
@@ -248,6 +371,7 @@ $HTML = @"
 "@
 # Enregistrement du tableau de bord
 $HTML | Set-Content -Path "$Dossier\inventaire.html" -Encoding UTF8
+
 Write-Host "Dashboard HTML genere avec succes !" -ForegroundColor Green
 
 # 11. Confirmation
