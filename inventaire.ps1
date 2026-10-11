@@ -107,6 +107,25 @@ catch {
     $EtatBitLocker = "Non disponible"
 }
 
+# Verification de la derniere mise a jour Windows
+$DerniereMAJ = "Non disponible"
+$NumeroKB = "Non disponible"
+
+try {
+    $MAJ = Get-HotFix -ErrorAction Stop |
+        Where-Object { $_.InstalledOn } |
+        Sort-Object InstalledOn -Descending |
+        Select-Object -First 1
+
+    if ($MAJ) {
+        $DerniereMAJ = $MAJ.InstalledOn.ToString("dd/MM/yyyy")
+        $NumeroKB = $MAJ.HotFixID
+    }
+}
+catch {
+    $DerniereMAJ = "Verification impossible"
+}
+
 # 6. Creation de l'inventaire
 $Inventaire = [PSCustomObject]@{
 
@@ -127,6 +146,8 @@ $Inventaire = [PSCustomObject]@{
     UtilisationDisque_Pct = $PourcentageDisque
     MicrosoftDefender     = $EtatDefender
     BitLockerC            = $EtatBitLocker
+    DernierCorrectif      = $DerniereMAJ
+    NumeroKB              = $NumeroKB
     DateInventaire        = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
 }
 
@@ -237,6 +258,10 @@ elseif ($EtatBitLocker -eq "Non chiffre") {
 elseif ($EtatBitLocker -eq "A verifier") {
     $CouleurBitLocker = "#f59e0b"
 }
+
+# Preparation des informations Windows Update
+$MAJ_HTML = Convertir-HTML $DerniereMAJ
+$KB_HTML = Convertir-HTML $NumeroKB
 
 # Creation du contenu HTML
 $HTML = @"
@@ -461,6 +486,27 @@ $HTML = @"
         <strong style="color: $CouleurBitLocker;">
             $EtatBitLocker
         </strong>
+    </p>
+</div>
+
+
+<!-- Audit des mises a jour Windows -->
+<div class="storage-card">
+    <h2>Windows Update</h2>
+
+    <p>
+        Dernier correctif recense :
+        <strong>$MAJ_HTML</strong>
+    </p>
+
+    <p>
+        Numero du correctif :
+        <strong>$KB_HTML</strong>
+    </p>
+
+    <p class="storage-status">
+        Information : ce controle ne garantit pas
+        que toutes les mises a jour sont installees.
     </p>
 </div>
 
