@@ -68,6 +68,44 @@ $PareFeuPrivate = ($PareFeu |
 
 $PareFeuPublic = ($PareFeu |
     Where-Object { $_.Name -eq "Public" }).Enabled
+    
+# Verification de Microsoft Defender
+$EtatDefender = "Inconnu"
+
+try {
+    $Defender = Get-MpComputerStatus -ErrorAction Stop
+
+    if ($Defender.RealTimeProtectionEnabled -eq $true) {
+        $EtatDefender = "Active"
+    }
+    else {
+        $EtatDefender = "Desactive"
+    }
+}
+catch {
+    $EtatDefender = "Non disponible"
+}
+
+# Verification de BitLocker sur C:
+$EtatBitLocker = "Inconnu"
+
+try {
+    $BitLocker = Get-BitLockerVolume -MountPoint "C:" -ErrorAction Stop
+
+    if ($BitLocker.VolumeStatus -eq "FullyEncrypted" -and
+        $BitLocker.ProtectionStatus -eq "On") {
+        $EtatBitLocker = "Chiffre et protege"
+    }
+    elseif ($BitLocker.VolumeStatus -eq "FullyDecrypted") {
+        $EtatBitLocker = "Non chiffre"
+    }
+    else {
+        $EtatBitLocker = "A verifier"
+    }
+}
+catch {
+    $EtatBitLocker = "Non disponible"
+}
 
 # 6. Creation de l'inventaire
 $Inventaire = [PSCustomObject]@{
@@ -87,6 +125,8 @@ $Inventaire = [PSCustomObject]@{
     EspaceLibre_Go        = $EspaceLibre
     EspaceUtilise_Go      = $EspaceUtilise
     UtilisationDisque_Pct = $PourcentageDisque
+    MicrosoftDefender     = $EtatDefender
+    BitLockerC            = $EtatBitLocker
     DateInventaire        = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
 }
 
@@ -159,6 +199,44 @@ function Get-EtatPareFeu($Actif) {
 $EtatDomain = Get-EtatPareFeu $PareFeuDomain
 $EtatPrivate = Get-EtatPareFeu $PareFeuPrivate
 $EtatPublic = Get-EtatPareFeu $PareFeuPublic
+
+# Couleurs automatiques des profils du pare-feu
+function Get-CouleurPareFeu($Actif) {
+    if ($null -eq $Actif) {
+        return "#94a3b8"
+    }
+
+    if ($Actif) {
+        return "#22c55e"
+    }
+
+    return "#ef4444"
+}
+
+$CouleurDomain = Get-CouleurPareFeu $PareFeuDomain
+$CouleurPrivate = Get-CouleurPareFeu $PareFeuPrivate
+$CouleurPublic = Get-CouleurPareFeu $PareFeuPublic
+
+# Couleurs des indicateurs de securite
+$CouleurDefender = "#94a3b8"
+$CouleurBitLocker = "#94a3b8"
+
+if ($EtatDefender -eq "Active") {
+    $CouleurDefender = "#22c55e"
+}
+elseif ($EtatDefender -eq "Desactive") {
+    $CouleurDefender = "#ef4444"
+}
+
+if ($EtatBitLocker -eq "Chiffre et protege") {
+    $CouleurBitLocker = "#22c55e"
+}
+elseif ($EtatBitLocker -eq "Non chiffre") {
+    $CouleurBitLocker = "#ef4444"
+}
+elseif ($EtatBitLocker -eq "A verifier") {
+    $CouleurBitLocker = "#f59e0b"
+}
 
 # Creation du contenu HTML
 $HTML = @"
@@ -365,6 +443,25 @@ $HTML = @"
     <p>Profil Domaine : $EtatDomain</p>
     <p>Profil Prive : $EtatPrivate</p>
     <p>Profil Public : $EtatPublic</p>
+</div>
+
+<!-- Audit de securite Windows -->
+<div class="storage-card">
+    <h2>Audit de securite Windows</h2>
+
+    <p>
+        Microsoft Defender :
+        <strong style="color: $CouleurDefender;">
+            $EtatDefender
+        </strong>
+    </p>
+
+    <p>
+        BitLocker (disque C:) :
+        <strong style="color: $CouleurBitLocker;">
+            $EtatBitLocker
+        </strong>
+    </p>
 </div>
 
         <!-- Jauge de stockage -->
