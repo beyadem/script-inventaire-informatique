@@ -20,3 +20,19 @@ Write-Host "Systeme : $($Windows.Caption)"
 Write-Host "Version Windows : $($Windows.Version)"
 Write-Host "Processeur : $($Processeur.Name)"
 
+
+# 5. Creer un objet contenant les informations
+$Inventaire = [PSCustomObject]@{
+    NomPC          = $NomPC
+    Systeme        = $Windows.Caption
+    VersionWindows = $Windows.Version
+    Processeur     = $Processeur.Name.Trim()
+    DateInventaire = Get-Date -Format "yyyy-MM-dd HH:mm:ss"
+}
+
+# 6. Exporter les informations dans un fichier CSV
+$Inventaire | Export-Csv -Path "C:\Inventaire\inventaire.csv" -NoTypeInformation -Encoding UTF8
+
+# 7. Confirmer la creation du fichier
+Write-Host "Inventaire enregistre dans C:\Inventaire\inventaire.csv"
+
